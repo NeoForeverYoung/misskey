@@ -73,6 +73,7 @@ export class ApiServerService {
 
 	// 绑定 this 上下文，创建 API 服务器
 	// 这是 Fastify 插件格式的方法，用于向 Fastify 实例注册路由和中间件
+	// TODO[JS] 这里的bindThis是啥意思？
 	@bindThis
 	public createServer(fastify: FastifyInstance, options: FastifyPluginOptions, done: (err?: Error) => void) {
 		// 注册 CORS 中间件，允许所有源的跨域请求
