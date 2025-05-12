@@ -170,6 +170,7 @@ export class SigninApiService {
 
 		// 获取用户资料
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+		// TODO[here] 5.12 
 		// 检查用户是否有安全密钥
 		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: user.id }).then(result => result >= 1);
 
