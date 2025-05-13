@@ -67,6 +67,8 @@ export class SigninService {
 	public signin(request: FastifyRequest, reply: FastifyReply, user: MiLocalUser) {
 		// 使用setImmediate将后续操作放入事件循环，不阻塞响应返回
 		// TODO[JS] 使用await和async 与setImmediate有什么区别？
+		// setImmediate 用于调度回调，不会阻塞当前函数。
+		// await 用于等待 Promise，暂停 async 函数的执行，直到 Promise 完成。
 		setImmediate(async () => {
 			// 创建登录通知，显示在用户的通知中心
 			this.notificationService.createNotification(user.id, 'login', {});
@@ -84,6 +86,9 @@ export class SigninService {
 			this.globalEventService.publishMainStream(user.id, 'signin', await this.signinEntityService.pack(record));
 
 			// 如果用户有验证过的邮箱，发送登录通知邮件
+			// 在很多现代的数据库库（如 TypeORM、Prisma、Mongoose 等）中，查询方法通常返回 Promise。
+			// 例如，findOneByOrFail 这个方法，返回的就是一个 Promise，代表“查找用户资料”的异步操作。
+			// 所以可以直接 await 它，无需自己手动 new Promise。
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 			if (profile.email && profile.emailVerified) {
 				this.emailService.sendEmail(profile.email, 'New login / ログインがありました',
