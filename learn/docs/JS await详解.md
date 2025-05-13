@@ -311,6 +311,8 @@ if (profilePromise.email && profilePromise.emailVerified) { // 这会失败！
 - 数据库查询是真正的异步操作，在后台执行不阻塞主线程
 - 使用`await`可以等待结果而不阻塞整个程序的执行
 - 这种机制让Node.js能够高效处理大量并发请求，是其性能优势的核心
+- 只要用的库/方法是异步的（返回 Promise），用 await 是最方便的写法。
+
 
 ---
 
