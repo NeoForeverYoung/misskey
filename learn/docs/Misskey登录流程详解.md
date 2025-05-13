@@ -248,6 +248,93 @@ export type SigninFlowResponse = {
    }
    ```
 
+## TOTP双因素认证原理
+
+TOTP（基于时间的一次性密码）是一种常用的双因素认证机制，用作"你拥有的东西"这一验证因素。
+
+### TOTP的基本原理
+
+TOTP的核心原理是将当前时间作为变量，结合一个预共享的密钥，生成一个短暂有效的验证码：
+
+1. **密钥分发**：
+   - 用户首次启用TOTP时，服务器生成一个随机密钥（通常为16-20字节）
+   - 这个密钥通过安全渠道（通常是QR码）分享给用户
+   - 用户将此密钥导入认证器应用（如Google Authenticator、Authy等）
+
+2. **验证码生成算法**：
+   ```
+   TOTP = HOTP(K, T)
+   ```
+   其中：
+   - K是共享密钥
+   - T是时间戳除以时间步长（通常为30秒）的整数值
+   - HOTP是基于HMAC的一次性密码算法
+
+3. **验证码生成步骤**：
+   - 确定当前UTC时间戳
+   - 将时间戳除以时间步长（30秒）并取整，得到"时间计数器"
+   - 将共享密钥和时间计数器输入HMAC-SHA1算法
+   - 对HMAC-SHA1输出进行截断，通常保留6位数字
+
+4. **服务器验证过程**：
+   ```typescript
+   async twoFactorAuthenticate(profile, token) {
+     // 获取存储的密钥
+     const secret = profile.twoFactorSecret;
+     
+     // 计算当前有效的TOTP代码
+     const verified = validateTOTP(secret, token, {
+       window: 1,  // 允许前后1个时间窗口的误差
+     });
+     
+     if (!verified) {
+       throw new Error('Invalid TOTP token');
+     }
+   }
+   ```
+
+5. **时间窗口容错**：
+   - 由于用户设备和服务器时间可能存在微小差异
+   - TOTP实现通常允许一定的时间窗口容错（前后30秒）
+   - 这意味着服务器会尝试验证当前时间窗口以及相邻时间窗口的代码
+
+### TOTP的安全性
+
+TOTP相比传统静态密码具有显著安全优势：
+
+1. **短暂有效期**：
+   - 验证码通常每30秒更新一次
+   - 即使被截获，也很快失效
+
+2. **离线验证**：
+   - 用户设备可以在没有网络连接的情况下生成验证码
+   - 不依赖短信或其他在线通信渠道
+
+3. **防钓鱼能力**：
+   - 每次登录需要新的验证码
+   - 攻击者无法通过获取一次验证码来进行长期攻击
+
+4. **设备绑定**：
+   - 验证码只能由拥有密钥的设备生成
+   - 为账户提供了"你拥有的东西"这一额外验证因素
+
+### 在Misskey中的实现
+
+Misskey使用标准TOTP实现，并通过`userAuthService.twoFactorAuthenticate`方法验证TOTP代码：
+
+```typescript
+// 验证双因素认证令牌
+try {
+  await this.userAuthService.twoFactorAuthenticate(profile, token);
+} catch (e) {
+  return await fail(403, {
+    id: 'cdf1235b-ac71-46d4-a3a6-84ccce48df6f',
+  });
+}
+```
+
+当用户输入正确的TOTP代码时，它与密码一起构成了完整的双因素验证，大幅提高了账户安全性。
+
 ### WebAuthn安全密钥流程
 
 1. **前两步与常规流程相同**

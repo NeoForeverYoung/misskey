@@ -201,8 +201,10 @@ export class SigninApiService {
 		}
 
 		// 比较提供的密码与存储的密码哈希
+		// bcrypt算法，不需要额外存储盐值。其加密后的字符串可以解出盐值
 		const same = await bcrypt.compare(password, profile.password!);
 
+		// 这是一个异步的fail函数，会在登录失败时调用
 		/**
 		 * 处理登录失败
 		 * @param status HTTP状态码（可选）
@@ -266,7 +268,7 @@ export class SigninApiService {
 			if (same) {
 				return this.signinService.signin(request, reply, user);
 			} else {
-				// 密码不匹配，登录失败
+				// 密码不匹配，登录失败，异步记录失败的流水
 				return await fail(403, {
 					id: '932c904e-9460-45b7-9ce6-7ed33be7eb2c',
 				});
