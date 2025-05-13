@@ -171,10 +171,11 @@ export class SigninApiService {
 		// 获取用户资料
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 		// TODO[here] 5.12 
-		// 检查用户是否有安全密钥
+		// TODO[Login-Domain]检查用户是否有安全密钥
 		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: user.id }).then(result => result >= 1);
 
 		// 如果没有提供密码，确定下一步登录流程
+		// 本质上登录就是一个流程，流程中包含多个步骤，每个步骤都有可能失败。相当于一个状态机
 		if (password == null) {
 			reply.code(200);
 			if (profile.twoFactorEnabled) {
@@ -189,6 +190,7 @@ export class SigninApiService {
 					finished: false,
 					next: 'captcha',
 				} satisfies Misskey.entities.SigninFlowResponse;
+				// 前端拿到这个返回值之后，会根据next的值，跳转到对应的页面
 			}
 		}
 
